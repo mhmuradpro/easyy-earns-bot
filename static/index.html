@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Easyy Earns</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#071b19;--panel:#102c28;--panel2:#173b34;--green:#20c78a;--muted:#a8c6bc;--white:#f5fff9}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#0a3027,#071b19 55%);font-family:Arial,sans-serif;color:var(--white);padding:18px}
+.wrap{max-width:520px;margin:auto}.top{display:flex;align-items:center;gap:12px;margin:10px 0 20px}.logo{width:48px;height:48px;border-radius:15px;background:var(--green);display:grid;place-items:center;font-size:25px;color:#063326;font-weight:bold}.sub{color:var(--muted);font-size:13px;margin-top:4px}.pill{margin-left:auto;background:#174a3c;color:#70f0bd;border-radius:30px;padding:7px 10px;font-size:12px}
+.balance{background:linear-gradient(120deg,#167b58,#0d5945);padding:22px;border-radius:22px;box-shadow:0 12px 28px #0004}.label{font-size:12px;color:#d2f8e7;letter-spacing:1.2px}.amount{font-size:38px;font-weight:800;margin:8px 0}.muted{color:var(--muted);font-size:13px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.stat,.tile,.section{background:var(--panel);border:1px solid #245044;border-radius:17px;padding:16px}.stat b{display:block;font-size:21px;margin-top:7px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.tile{min-height:104px;text-align:left;color:var(--white);font-size:15px;font-weight:bold;cursor:pointer}.tile span{display:block;font-size:25px;margin-bottom:10px}.tile small{display:block;color:var(--muted);font-weight:normal;margin-top:5px}.section{margin-top:14px}.section h3{margin:0 0 12px;font-size:16px}.btn{border:0;border-radius:12px;background:var(--green);color:#052d20;padding:13px 16px;font-weight:bold;width:100%;font-size:15px;margin-top:10px;cursor:pointer}.input{width:100%;padding:12px;border:1px solid #315d50;border-radius:10px;background:#09231e;color:white;margin:7px 0 10px}.hidden{display:none}.row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #24443c;font-size:13px}.notice{color:#f7d88b;font-size:12px;line-height:1.5}.toast{padding:10px;background:#174a3c;border-radius:10px;margin-top:10px;font-size:13px}
+</style>
+</head>
+<body><div class="wrap">
+<header class="top"><div class="logo">E</div><div><b style="font-size:20px">Easyy Earns</b><div class="sub">Your earning dashboard</div></div><div class="pill">● ONLINE</div></header>
+<div class="balance"><div class="label">TOTAL BALANCE</div><div class="amount" id="balance">$0.00</div><div class="muted">Available balance</div></div>
+<div class="stats"><div class="stat"><div class="muted">👥 Referrals</div><b id="refs">0</b></div><div class="stat"><div class="muted">💵 Currency</div><b>USD</b></div></div>
+<div class="grid">
+<button class="tile" onclick="show('ads')"><span>▶️</span>Watch Ads<small>Available offers</small></button>
+<button class="tile" onclick="show('refer')"><span>👥</span>Refer & Earn<small>Invite friends</small></button>
+<button class="tile" onclick="show('withdraw')"><span>💳</span>Withdraw<small>Request payout</small></button>
+<button class="tile" onclick="show('history')"><span>📜</span>History<small>Recent transactions</small></button>
+</div>
+<div class="section hidden" id="ads"><h3>📺 Watch Ads</h3><p class="muted">Ad rewards will appear here only after an approved ad network confirms a valid reward event.</p><p class="notice">Adsterra Popunder is not a rewarded-ad format. Do not offer balance for viewing or clicking it. AdsGram reward integration must be enabled and verified by AdsGram first.</p><button class="btn" onclick="toast('Rewarded ads are not configured yet.')">Check available ads</button></div>
+<div class="section hidden" id="refer"><h3>👥 Invite friends</h3><p class="muted">Share your personal referral link.</p><input class="input" id="refLink" readonly><button class="btn" onclick="copyRef()">Copy referral link</button></div>
+<div class="section hidden" id="withdraw"><h3>💳 Request withdrawal</h3><label class="muted">Amount (USD)</label><input class="input" id="wAmount" type="number" min="1" step=".01" placeholder="e.g. 5.00"><label class="muted">Payment method</label><select class="input" id="wMethod"><option value="">Choose method</option><option>bKash</option><option>Nagad</option><option>PayPal</option><option>USDT</option></select><label class="muted">Payment account</label><input class="input" id="wAccount" placeholder="Your payment number or wallet"><button class="btn" onclick="withdraw()">Submit request</button></div>
+<div class="section hidden" id="history"><h3>📜 Recent activity</h3><div id="hist" class="muted">No transactions yet.</div></div>
+<div id="msg"></div><p class="notice" style="text-align:center;margin:22px 8px">Demo starter: no real earnings are generated automatically. Rewards must be funded and verified before crediting users.</p>
+</div>
+<script>
+const tg=window.Telegram?.WebApp; tg?.ready(); tg?.expand();
+const headers={'Content-Type':'application/json','X-Telegram-Init-Data':tg?.initData||''};
+function toast(t){document.getElementById('msg').innerHTML='<div class="toast">'+t+'</div>'}
+function show(id){document.querySelectorAll('.section').forEach(x=>x.classList.add('hidden'));document.getElementById(id).classList.remove('hidden')}
+async function load(){try{let r=await fetch('/api/me',{headers});let d=await r.json();if(!r.ok)throw Error(d.error||'Could not load account');document.getElementById('balance').textContent='$'+Number(d.user.balance).toFixed(2);document.getElementById('refs').textContent=d.user.referrals;document.getElementById('refLink').value=d.user.ref_link;let h=d.history||[];document.getElementById('hist').innerHTML=h.length?h.map(x=>`<div class="row"><span>${x.kind.replaceAll('_',' ')}</span><b>${x.amount<0?'-':'+'}$${Math.abs(x.amount).toFixed(2)}</b></div>`).join(''):'No transactions yet.'}catch(e){toast(e.message+' Open this dashboard using the button in your Telegram bot.')}}
+function copyRef(){let v=document.getElementById('refLink').value;navigator.clipboard?.writeText(v).then(()=>toast('Referral link copied.')).catch(()=>toast(v))}
+async function withdraw(){let amount=document.getElementById('wAmount').value,method=document.getElementById('wMethod').value,account=document.getElementById('wAccount').value.trim();try{let r=await fetch('/api/withdraw',{method:'POST',headers,body:JSON.stringify({amount,method,account})});let d=await r.json();if(!r.ok)throw Error(d.error);toast(d.message);load()}catch(e){toast(e.message)}}
+load();
+</script></body></html>
